@@ -2,10 +2,10 @@
 {"friendlyVersion": "0.1",
  "versionDefName": "APP_RESOURCES",
  "media": [
-	   {
-	    "type":"raw",
-	    "defName":"DUMMY",
-	    "file":"resource_map.json"
-	   }
+	   	{
+		"type": "font",
+		"defName": "FONT_GOTHAM_LIGHT_32",
+		"file": "fonts/gotham_light_32.ttf"
+		}
 	  ]
 }

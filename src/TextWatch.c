@@ -1,6 +1,7 @@
 #include "pebble_os.h"
 #include "pebble_app.h"
 #include "pebble_fonts.h"
+#include "resource_ids.auto.h"
 
 #include "num2words-ro.h"
 
@@ -33,6 +34,7 @@ Line line2;
 Line line3;
 
 PblTm t;
+GFont lightFont;
 
 static char line1Str[2][BUFFER_SIZE];
 static char line2Str[2][BUFFER_SIZE];
@@ -143,25 +145,6 @@ void display_initial_time(PblTm *t)
 }
 
 
-// Configure the first line of text
-void configureBoldLayer(TextLayer *textlayer)
-{
-	text_layer_set_font(textlayer, fonts_get_system_font(FONT_KEY_GOTHAM_42_BOLD));
-	text_layer_set_text_color(textlayer, GColorWhite);
-	text_layer_set_background_color(textlayer, GColorClear);
-	text_layer_set_text_alignment(textlayer, GTextAlignmentLeft);
-}
-
-// Configure for the 2nd and 3rd lines
-void configureLightLayer(TextLayer *textlayer)
-{
-	text_layer_set_font(textlayer, fonts_get_system_font(FONT_KEY_GOTHAM_42_LIGHT));
-	text_layer_set_text_color(textlayer, GColorWhite);
-	text_layer_set_background_color(textlayer, GColorClear);
-	text_layer_set_text_alignment(textlayer, GTextAlignmentLeft);
-}
-
-
 /** 
  * Debug methods. For quickly debugging enable debug macro on top to transform the watchface into
  * a standard app and you will be able to change the time with the up and down buttons
@@ -209,6 +192,24 @@ void click_config_provider(ClickConfig **config, Window *window) {
 
 #endif
 
+// Configure the first line of text
+void configureBoldLayer(TextLayer *textlayer)
+{
+	text_layer_set_font(textlayer, fonts_get_system_font(FONT_KEY_GOTHAM_42_BOLD));
+	text_layer_set_text_color(textlayer, GColorWhite);
+	text_layer_set_background_color(textlayer, GColorClear);
+	text_layer_set_text_alignment(textlayer, GTextAlignmentLeft);
+}
+
+// Configure for the 2nd and 3rd lines
+void configureLightLayer(TextLayer *textlayer)
+{
+	text_layer_set_font(textlayer, lightFont);
+	text_layer_set_text_color(textlayer, GColorWhite);
+	text_layer_set_background_color(textlayer, GColorClear);
+	text_layer_set_text_alignment(textlayer, GTextAlignmentLeft);
+}
+
 void handle_init(AppContextRef ctx) {
   	(void)ctx;
 
@@ -218,6 +219,9 @@ void handle_init(AppContextRef ctx) {
 
 	// Init resources
 	resource_init_current_app(&APP_RESOURCES);
+	
+	// Custom fonts
+	lightFont = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_GOTHAM_LIGHT_32));
 	
 	// 1st line layers
 	text_layer_init(&line1.currentLayer, GRect(0, 18, 144, 50));
