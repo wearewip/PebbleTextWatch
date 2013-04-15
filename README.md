@@ -8,6 +8,7 @@ and translate it into many more languages.
 A video with the text changing animation can be found here: http://www.youtube.com/watch?v=vVTCtfZ-GsU
 
 Compiled build: http://c.wip.ro/0t0i0J172R2Q
+
 Romanian language source code available in the textRO branch: https://github.com/wearewip/PebbleTextWatch/tree/textRO
 
 Screenshot:  
