@@ -7,5 +7,7 @@ and translate it into many more languages.
 
 A video with the text changing animation can be found here: http://www.youtube.com/watch?v=vVTCtfZ-GsU
 
+Compiled build: http://c.wip.ro/0t0i0J172R2Q
+
 Screenshot:  
 ![Text watch screenshot](http://c.wip.ro/image/221C402K3y0t/photo.JPG)
