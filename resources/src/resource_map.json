@@ -4,8 +4,13 @@
  "media": [
 	   	{
 		"type": "font",
-		"defName": "FONT_GOTHAM_LIGHT_32",
-		"file": "fonts/gotham_light_32.ttf"
+		"defName": "FONT_GOTHAM_LIGHT_31",
+		"file": "fonts/gotham_light_31.ttf"
+		},
+		{
+		"type": "font",
+		"defName": "FONT_GOTHAM_BOLD_36",
+		"file": "fonts/gotham_bold_36.ttf"
 		}
 	  ]
 }

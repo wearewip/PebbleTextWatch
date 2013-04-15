@@ -35,12 +35,11 @@ Line line3;
 
 PblTm t;
 GFont lightFont;
+GFont boldFont;
 
 static char line1Str[2][BUFFER_SIZE];
 static char line2Str[2][BUFFER_SIZE];
 static char line3Str[2][BUFFER_SIZE];
-
-static bool textInitialized = false;
 
 // Animation handler
 void animationStoppedHandler(struct Animation *animation, bool finished, void *context)
@@ -195,7 +194,7 @@ void click_config_provider(ClickConfig **config, Window *window) {
 // Configure the first line of text
 void configureBoldLayer(TextLayer *textlayer)
 {
-	text_layer_set_font(textlayer, fonts_get_system_font(FONT_KEY_GOTHAM_42_BOLD));
+	text_layer_set_font(textlayer, boldFont);
 	text_layer_set_text_color(textlayer, GColorWhite);
 	text_layer_set_background_color(textlayer, GColorClear);
 	text_layer_set_text_alignment(textlayer, GTextAlignmentLeft);
@@ -221,7 +220,8 @@ void handle_init(AppContextRef ctx) {
 	resource_init_current_app(&APP_RESOURCES);
 	
 	// Custom fonts
-	lightFont = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_GOTHAM_LIGHT_32));
+	lightFont = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_GOTHAM_LIGHT_31));
+	boldFont = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_GOTHAM_BOLD_36));
 	
 	// 1st line layers
 	text_layer_init(&line1.currentLayer, GRect(0, 18, 144, 50));
@@ -236,8 +236,8 @@ void handle_init(AppContextRef ctx) {
 	configureLightLayer(&line2.nextLayer);
 
 	// 3rd layers
-	text_layer_init(&line3.currentLayer, GRect(0, 92, 144, 50));
-	text_layer_init(&line3.nextLayer, GRect(144, 92, 144, 50));
+	text_layer_init(&line3.currentLayer, GRect(0, 85, 144, 50));
+	text_layer_init(&line3.nextLayer, GRect(144, 85, 144, 50));
 	configureLightLayer(&line3.currentLayer);
 	configureLightLayer(&line3.nextLayer);
 

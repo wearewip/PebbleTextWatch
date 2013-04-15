@@ -98,7 +98,7 @@ void time_to_3words(int hours, int minutes, char *line1, char *line2, char *line
 	memset(line1, 0, length);
 	memset(line2, 0, length);
 	memset(line3, 0, length);
-	
+
 	char *start = value;
 	char *pch = strstr (start, " ");
 	while (pch != NULL) {
@@ -114,11 +114,21 @@ void time_to_3words(int hours, int minutes, char *line1, char *line2, char *line
 	}
 	
 	// Truncate long teen values
-	if (strlen(line2) > 7) {
-		char *pch = strstr(line2, "sprezece");
+	pch = strstr(line2, "sprezece");
+	if (strlen(line2) > 7 && pch) {
 		if (pch) {
 			memcpy(line3, pch, 8);
 			pch[0] = 0;
 		}
+	} else if (strlen(line3) != 0) {
+		// Changing "doua" to "doi"
+		if (memcmp(line3, "doua", 4) == 0) {
+			memset(line3, 0, strlen(line3));
+			memcpy(line3, "doi", 3);
+		}
+		
+		memmove(line3+3, line3, strlen(line3));
+		memcpy(line3, "si ", 3);
+		
 	}
 }
