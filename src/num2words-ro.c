@@ -115,11 +115,9 @@ void time_to_3words(int hours, int minutes, char *line1, char *line2, char *line
 	
 	// Truncate long teen values
 	pch = strstr(line2, "sprezece");
-	if (strlen(line2) > 7 && pch) {
-		if (pch) {
-			memcpy(line3, pch, 8);
-			pch[0] = 0;
-		}
+	if (pch) {
+		memcpy(line3, pch, 8);
+		pch[0] = 0;
 	} else if (strlen(line3) != 0) {
 		// Changing "doua" to "doi"
 		if (memcmp(line3, "doua", 4) == 0) {
@@ -129,6 +127,15 @@ void time_to_3words(int hours, int minutes, char *line1, char *line2, char *line
 		
 		memmove(line3+3, line3, strlen(line3));
 		memcpy(line3, "si ", 3);
-		
+	}
+	
+	if (memcmp(line1, "unsprezece", 10) == 0) {
+		memset(line1, 0, strlen(line1));
+		memcpy(line1, "unspe", 5);
+	}
+	
+	if (memcmp(line1, "doispre", 7) == 0) {
+		memset(line1, 0, strlen(line1));
+		memcpy(line1, "doispe", 6);
 	}
 }
