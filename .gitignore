@@ -1,0 +1,5 @@
+# Ignore build generated files
+build
+.DS_Store
+.lock-waf_darwin_build
+.waf*

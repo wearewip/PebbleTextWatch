@@ -1,91 +1,78 @@
-#include "pebble_os.h"
-#include "pebble_app.h"
-#include "pebble_fonts.h"
-#include "resource_ids.auto.h"
-
+#include "pebble.h"
 #include "num2words-ro.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #define BUFFER_SIZE 44
 
-#define MY_UUID { 0x49, 0x6E, 0x04, 0xAD, 0x13, 0x2A, 0x48, 0xAB, 0xB1, 0x65, 0x7F, 0xF4, 0xA9, 0x98, 0x72, 0xD2 }
-PBL_APP_INFO(MY_UUID,
-             "TextWatch", "Wip Interactive",
-             1, 0,
-             DEFAULT_MENU_ICON,
-#if DEBUG
-             APP_INFO_STANDARD_APP
-#else
-			 APP_INFO_WATCH_FACE
-#endif
-);
-
-Window window;
+static Window *window;
 
 typedef struct {
-	TextLayer currentLayer;
-	TextLayer nextLayer;	
-	PropertyAnimation currentAnimation;
-	PropertyAnimation nextAnimation;
+	TextLayer *currentLayer;
+	TextLayer *nextLayer;	
+	PropertyAnimation *currentAnimation;
+	PropertyAnimation *nextAnimation;
 } Line;
 
-Line line1;
-Line line2;
-Line line3;
 
-PblTm t;
-GFont lightFont;
-GFont boldFont;
+static Line line1;
+static Line line2;
+static Line line3;
+
+static struct tm *t;
+static GFont lightFont;
+static GFont boldFont;
 
 static char line1Str[2][BUFFER_SIZE];
 static char line2Str[2][BUFFER_SIZE];
 static char line3Str[2][BUFFER_SIZE];
 
 // Animation handler
-void animationStoppedHandler(struct Animation *animation, bool finished, void *context)
+static void animationStoppedHandler(struct Animation *animation, bool finished, void *context)
 {
-	TextLayer *current = (TextLayer *)context;
-	GRect rect = layer_get_frame(&current->layer);
+	Layer *textLayer = text_layer_get_layer((TextLayer *)context);
+	GRect rect = layer_get_frame(textLayer);
 	rect.origin.x = 144;
-	layer_set_frame(&current->layer, rect);
+	layer_set_frame(textLayer, rect);
 }
 
 // Animate line
-void makeAnimationsForLayers(Line *line, TextLayer *current, TextLayer *next)
+static void makeAnimationsForLayers(Line *line, TextLayer *current, TextLayer *next)
 {
-	GRect rect = layer_get_frame(&next->layer);
-	rect.origin.x -= 144;
+	GRect fromRect = layer_get_frame(text_layer_get_layer(next));
+	GRect toRect = fromRect;
+	toRect.origin.x -= 144;
 	
-	property_animation_init_layer_frame(&line->nextAnimation, &next->layer, NULL, &rect);
-	animation_set_duration(&line->nextAnimation.animation, 400);
-	animation_set_curve(&line->nextAnimation.animation, AnimationCurveEaseOut);
-	animation_schedule(&line->nextAnimation.animation);
+	line->nextAnimation = property_animation_create_layer_frame(text_layer_get_layer(next), &fromRect, &toRect);
+	animation_set_duration((Animation *)line->nextAnimation, 400);
+	animation_set_curve((Animation *)line->nextAnimation, AnimationCurveEaseOut);
+	animation_schedule((Animation *)line->nextAnimation);
 	
-	GRect rect2 = layer_get_frame(&current->layer);
-	rect2.origin.x -= 144;
+	GRect fromRect2 = layer_get_frame(text_layer_get_layer(current));
+	GRect toRect2 = fromRect2;
+	toRect2.origin.x -= 144;
 	
-	property_animation_init_layer_frame(&line->currentAnimation, &current->layer, NULL, &rect2);
-	animation_set_duration(&line->currentAnimation.animation, 400);
-	animation_set_curve(&line->currentAnimation.animation, AnimationCurveEaseOut);
+	line->currentAnimation = property_animation_create_layer_frame(text_layer_get_layer(current), &fromRect2, &toRect2);
+	animation_set_duration((Animation *)line->currentAnimation, 400);
+	animation_set_curve((Animation *)line->currentAnimation, AnimationCurveEaseOut);
 	
-	animation_set_handlers(&line->currentAnimation.animation, (AnimationHandlers) {
+	animation_set_handlers((Animation *)line->currentAnimation, (AnimationHandlers) {
 		.stopped = (AnimationStoppedHandler)animationStoppedHandler
 	}, current);
 	
-	animation_schedule(&line->currentAnimation.animation);
+	animation_schedule((Animation *)line->currentAnimation);
 }
 
 // Update line
-void updateLineTo(Line *line, char lineStr[2][BUFFER_SIZE], char *value)
+static void updateLineTo(Line *line, char lineStr[2][BUFFER_SIZE], char *value)
 {
 	TextLayer *next, *current;
 	
-	GRect rect = layer_get_frame(&line->currentLayer.layer);
-	current = (rect.origin.x == 0) ? &line->currentLayer : &line->nextLayer;
-	next = (current == &line->currentLayer) ? &line->nextLayer : &line->currentLayer;
+	GRect rect = layer_get_frame(text_layer_get_layer(line->currentLayer));
+	current = (rect.origin.x == 0) ? line->currentLayer : line->nextLayer;
+	next = (current == line->currentLayer) ? line->nextLayer : line->currentLayer;
 	
 	// Update correct text only
-	if (current == &line->currentLayer) {
+	if (current == line->currentLayer) {
 		memset(lineStr[1], 0, BUFFER_SIZE);
 		memcpy(lineStr[1], value, strlen(value));
 		text_layer_set_text(next, lineStr[1]);
@@ -99,10 +86,10 @@ void updateLineTo(Line *line, char lineStr[2][BUFFER_SIZE], char *value)
 }
 
 // Check to see if the current line needs to be updated
-bool needToUpdateLine(Line *line, char lineStr[2][BUFFER_SIZE], char *nextValue)
+static bool needToUpdateLine(Line *line, char lineStr[2][BUFFER_SIZE], char *nextValue)
 {
 	char *currentStr;
-	GRect rect = layer_get_frame(&line->currentLayer.layer);
+	GRect rect = layer_get_frame(text_layer_get_layer(line->currentLayer));
 	currentStr = (rect.origin.x == 0) ? lineStr[0] : lineStr[1];
 
 	if (memcmp(currentStr, nextValue, strlen(nextValue)) != 0 ||
@@ -113,7 +100,7 @@ bool needToUpdateLine(Line *line, char lineStr[2][BUFFER_SIZE], char *nextValue)
 }
 
 // Update screen based on new time
-void display_time(PblTm *t)
+static void display_time(struct tm *t)
 {
 	// The current time text will be stored in the following 3 strings
 	char textLine1[BUFFER_SIZE];
@@ -134,65 +121,51 @@ void display_time(PblTm *t)
 }
 
 // Update screen without animation first time we start the watchface
-void display_initial_time(PblTm *t)
+static void display_initial_time(struct tm *t)
 {
 	time_to_3words(t->tm_hour, t->tm_min, line1Str[0], line2Str[0], line3Str[0], BUFFER_SIZE);
 	
-	text_layer_set_text(&line1.currentLayer, line1Str[0]);
-	text_layer_set_text(&line2.currentLayer, line2Str[0]);
-	text_layer_set_text(&line3.currentLayer, line3Str[0]);
+	text_layer_set_text(line1.currentLayer, line1Str[0]);
+	text_layer_set_text(line2.currentLayer, line2Str[0]);
+	text_layer_set_text(line3.currentLayer, line3Str[0]);
 }
 
-
-/** 
- * Debug methods. For quickly debugging enable debug macro on top to transform the watchface into
- * a standard app and you will be able to change the time with the up and down buttons
- */ 
+// Debug methods. For quickly debugging enable debug macro on top to transform the watchface into
+// a standard app and you will be able to change the time with the up and down buttons
 #if DEBUG
 
-void up_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
-	(void)recognizer;
-	(void)window;
-	
-	t.tm_min += 1;
-	if (t.tm_min >= 60) {
-		t.tm_min = 0;
-		t.tm_hour += 1;
+static void up_single_click_handler(ClickRecognizerRef recognizer, void *context) {
+  t->tm_min += 1;
+	if (t->tm_min >= 60) {
+		t->tm_min = 0;
+		t->tm_hour += 1;
 		
-		if (t.tm_hour >= 24) {
-			t.tm_hour = 0;
+		if (t->tm_hour >= 24) {
+			t->tm_hour = 0;
 		}
 	}
-	display_time(&t);
+	display_time(t);
 }
 
 
-void down_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
-	(void)recognizer;
-	(void)window;
-	
-	t.tm_min -= 1;
-	if (t.tm_min < 0) {
-		t.tm_min = 59;
-		t.tm_hour -= 1;
+static void down_single_click_handler(ClickRecognizerRef recognizer, void *context) {
+  t->tm_min -= 1;
+	if (t->tm_min < 0) {
+		t->tm_min = 59;
+		t->tm_hour -= 1;
 	}
-	display_time(&t);
+	display_time(t);
 }
 
-void click_config_provider(ClickConfig **config, Window *window) {
-  (void)window;
-
-  config[BUTTON_ID_UP]->click.handler = (ClickHandler) up_single_click_handler;
-  config[BUTTON_ID_UP]->click.repeat_interval_ms = 100;
-
-  config[BUTTON_ID_DOWN]->click.handler = (ClickHandler) down_single_click_handler;
-  config[BUTTON_ID_DOWN]->click.repeat_interval_ms = 100;
+static void click_config_provider(ClickRecognizerRef recognizer, void *context) {
+	window_single_click_subscribe(BUTTON_ID_UP, (ClickHandler)up_single_click_handler);
+	window_single_click_subscribe(BUTTON_ID_DOWN, (ClickHandler)down_single_click_handler);
 }
 
 #endif
 
 // Configure the first line of text
-void configureBoldLayer(TextLayer *textlayer)
+static void configureBoldLayer(TextLayer *textlayer)
 {
 	text_layer_set_font(textlayer, boldFont);
 	text_layer_set_text_color(textlayer, GColorWhite);
@@ -201,7 +174,7 @@ void configureBoldLayer(TextLayer *textlayer)
 }
 
 // Configure for the 2nd and 3rd lines
-void configureLightLayer(TextLayer *textlayer)
+static void configureLightLayer(TextLayer *textlayer)
 {
 	text_layer_set_font(textlayer, lightFont);
 	text_layer_set_text_color(textlayer, GColorWhite);
@@ -209,70 +182,68 @@ void configureLightLayer(TextLayer *textlayer)
 	text_layer_set_text_alignment(textlayer, GTextAlignmentLeft);
 }
 
-void handle_init(AppContextRef ctx) {
-  	(void)ctx;
+// Time handler called every minute by the system
+static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
+	t = tick_time;
+  display_time(tick_time);
+}
 
-	window_init(&window, "TextWatch");
-	window_stack_push(&window, true);
-	window_set_background_color(&window, GColorBlack);
+static void init() {
+  window = window_create();
+  window_stack_push(window, true);
+  window_set_background_color(window, GColorBlack);
 
-	// Init resources
-	resource_init_current_app(&APP_RESOURCES);
-	
 	// Custom fonts
 	lightFont = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_GOTHAM_LIGHT_31));
 	boldFont = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_GOTHAM_BOLD_36));
-	
+
 	// 1st line layers
-	text_layer_init(&line1.currentLayer, GRect(0, 18, 144, 50));
-	text_layer_init(&line1.nextLayer, GRect(144, 18, 144, 50));
-	configureBoldLayer(&line1.currentLayer);
-	configureBoldLayer(&line1.nextLayer);
+	line1.currentLayer = text_layer_create(GRect(0, 18, 144, 50));
+	line1.nextLayer = text_layer_create(GRect(144, 18, 144, 50));
+	configureBoldLayer(line1.currentLayer);
+	configureBoldLayer(line1.nextLayer);
 
 	// 2nd layers
-	text_layer_init(&line2.currentLayer, GRect(0, 55, 144, 50));
-	text_layer_init(&line2.nextLayer, GRect(144, 55, 144, 50));
-	configureLightLayer(&line2.currentLayer);
-	configureLightLayer(&line2.nextLayer);
+	line2.currentLayer = text_layer_create(GRect(0, 55, 144, 50));
+	line2.nextLayer = text_layer_create(GRect(144, 55, 144, 50));
+	configureLightLayer(line2.currentLayer);
+	configureLightLayer(line2.nextLayer);
 
 	// 3rd layers
-	text_layer_init(&line3.currentLayer, GRect(0, 85, 144, 50));
-	text_layer_init(&line3.nextLayer, GRect(144, 85, 144, 50));
-	configureLightLayer(&line3.currentLayer);
-	configureLightLayer(&line3.nextLayer);
+	line3.currentLayer = text_layer_create(GRect(0, 85, 144, 50));
+	line3.nextLayer = text_layer_create(GRect(144, 85, 144, 50));
+	configureLightLayer(line3.currentLayer);
+	configureLightLayer(line3.nextLayer);
 
 	// Configure time on init
-	get_time(&t);
-	display_initial_time(&t);
-	
+  time_t now = time(NULL);
+  struct tm *t = localtime(&now);
+	display_initial_time(t);
+
 	// Load layers
-  	layer_add_child(&window.layer, &line1.currentLayer.layer);
-	layer_add_child(&window.layer, &line1.nextLayer.layer);
-	layer_add_child(&window.layer, &line2.currentLayer.layer);
-	layer_add_child(&window.layer, &line2.nextLayer.layer);
-	layer_add_child(&window.layer, &line3.currentLayer.layer);
-	layer_add_child(&window.layer, &line3.nextLayer.layer);
-	
-#if DEBUG
+	Layer *window_layer = window_get_root_layer(window);
+	layer_add_child(window_layer, text_layer_get_layer(line1.currentLayer));
+	layer_add_child(window_layer, text_layer_get_layer(line1.nextLayer));
+	layer_add_child(window_layer, text_layer_get_layer(line2.currentLayer));
+	layer_add_child(window_layer, text_layer_get_layer(line2.nextLayer));
+	layer_add_child(window_layer, text_layer_get_layer(line3.currentLayer));
+	layer_add_child(window_layer, text_layer_get_layer(line3.nextLayer));
+
+	#if DEBUG
 	// Button functionality
-	window_set_click_config_provider(&window, (ClickConfigProvider) click_config_provider);
-#endif
+	window_set_click_config_provider(window, (ClickConfigProvider) click_config_provider);
+	#endif
+
+  tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
 }
 
-// Time handler called every minute by the system
-void handle_minute_tick(AppContextRef ctx, PebbleTickEvent *t) {
-  (void)ctx;
-
-  display_time(t->tick_time);
+static void deinit() {
+	tick_timer_service_unsubscribe();
+	window_destroy(window);
 }
 
-void pbl_main(void *params) {
-  PebbleAppHandlers handlers = {
-    .init_handler = &handle_init,
-	.tick_info = {
-		      .tick_handler = &handle_minute_tick,
-		      .tick_units = MINUTE_UNIT
-		    }
-  };
-  app_event_loop(params, &handlers);
+int main(void) {
+  init();
+  app_event_loop();
+  deinit();
 }
