@@ -9,5 +9,7 @@ A video with the text changing animation can be found here: http://www.youtube.c
 
 Compiled build: http://c.wip.ro/0t0i0J172R2Q
 
+Romanian language source code available in the textRO branch: https://github.com/wearewip/PebbleTextWatch/tree/textRO
+
 Screenshot:  
 ![Text watch screenshot](http://c.wip.ro/image/221C402K3y0t/photo.JPG)
