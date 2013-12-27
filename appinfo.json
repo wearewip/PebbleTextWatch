@@ -1,0 +1,26 @@
+{
+  "uuid": "496e04ad-132a-48ab-b165-7ff4a99872d2",
+  "shortName": "TextWatch",
+  "longName": "TextWatch",
+  "companyName": "Wip Interactive",
+  "versionCode": 2,
+  "versionLabel": "2.0.0",
+  "watchapp": {
+    "watchface": true
+  },
+  "appKeys": {},
+  "resources": {
+    "media": [
+      {
+        "type": "font",
+        "name": "FONT_GOTHAM_LIGHT_31",
+        "file": "fonts/gotham_light_31.ttf"
+      },
+      {
+        "type": "font",
+        "name": "FONT_GOTHAM_BOLD_36",
+        "file": "fonts/gotham_bold_36.ttf"
+      }
+    ]
+  }
+}
