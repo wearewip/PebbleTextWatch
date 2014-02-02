@@ -1,8 +1,8 @@
 {
-  "uuid": "496e04ad-132a-48ab-b165-7ff4a99872d2",
-  "shortName": "TextWatch",
-  "longName": "TextWatch",
-  "companyName": "Wip Interactive",
+  "uuid": "496e04ad-132a-48ab-b165-7ff4a99872d3",
+  "shortName": "TextWatch RO",
+  "longName": "TextWatch Romania",
+  "companyName": "wearewip.com",
   "versionCode": 2,
   "versionLabel": "2.0.0",
   "watchapp": {
@@ -11,6 +11,12 @@
   "appKeys": {},
   "resources": {
     "media": [
+      {
+        "menuIcon": true,
+        "type": "png",
+        "name": "IMAGE_MENU_ICON",
+        "file": "images/menu_icon.jpg"
+      },
       {
         "type": "font",
         "name": "FONT_GOTHAM_LIGHT_31",
